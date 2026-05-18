@@ -1,10 +1,10 @@
-# Rogue Commit - TryHackMe CTF Writeup
+# Task 2 - [Rogue Commit](https://tryhackme.com/room/tokencity) - TryHackMe CTF Writeup
 ### TryHackMe · An AI Odyssey Event 2026
 
 > **Author:** [georgegiannakidis](https://github.com/georgegiannakidis)  
 > **Platform:** TryHackMe  
-> **Room:** 2026: An AI Odyssey  
-> **Challenge:** Rogue Commit  
+> **Room:** Token City  
+> **Challenge:** Task 2 - Rogue Commit  
 > **Category:** AI Sec + DFIR  
 > **Difficulty:** Medium  
 > **Points:** 60  
