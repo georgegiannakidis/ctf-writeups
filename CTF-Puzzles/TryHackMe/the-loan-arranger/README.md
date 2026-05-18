@@ -3,7 +3,7 @@
 
 > **Author:** [georgegiannakidis](https://github.com/georgegiannakidis)  
 > **Platform:** TryHackMe  
-> **Room:** CortexLend - The Loan Arranger  
+> **Room:** Token City  
 > **Category:** ML Sec  
 > **Difficulty:** Medium  
 > **Points:** 60  
