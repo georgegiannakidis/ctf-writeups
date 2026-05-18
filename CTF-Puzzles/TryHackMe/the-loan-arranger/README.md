@@ -1,4 +1,4 @@
-# The Loan Arranger - TryHackMe CTF Writeup
+# [The Loan Arranger](https://tryhackme.com/room/tokencity#:~:text=ML%20Sec,The%20Loan%20Arranger) - TryHackMe CTF Writeup
 ### TryHackMe · 2026: An AI Odyssey Event · The Loan Arranger
 
 > **Author:** [georgegiannakidis](https://github.com/georgegiannakidis)  
