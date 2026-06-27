@@ -36,19 +36,45 @@ An initial `nmap` scan reveals a textbook ICS/OT stack.
 #### Code Blocks
 
 ```bash
-nmap -sV -p- <TARGET_IP>
+nmap -sV -sC -p- --min-rate 5000 <TARGET_IP>
 ```
 
 #### Tables
 
-| Port  | Service        | Notes                                          |
-|-------|----------------|------------------------------------------------|
-| 80    | HTTP           | "PLC CCTV Simulator" — live video feed         |
-| 102   | Siemens S7     | SNAP7 PLC simulation                           |
-| 502   | **Modbus TCP** | **Unauthenticated — the real attack surface**  |
-| 1880  | Node-RED       | Editor reachable (red herring)                 |
-| 8080  | OpenPLC        | Web login portal (red herring)                 |
-| 44818 | EtherNet/IP    | ICS discovery protocol                         |
+| Port  | Service          | Version / Detail                              | Notes                                          |
+|-------|------------------|-----------------------------------------------|------------------------------------------------|
+| 22    | SSH              | OpenSSH 9.6p1 (Ubuntu)                         | No creds — not the path                        |
+| 80    | HTTP             | Werkzeug 3.1.3 / Python 3.12.3                 | "PLC CCTV Simulator" — live video feed         |
+| 102   | iso-tsap (S7)    | Siemens S7 PLC, CPU 315-2 PN/DP, SNAP7-SERVER  | Simulated Siemens PLC                          |
+| 502   | **Modbus (mbap)**| —                                             | **Unauthenticated — the real attack surface**  |
+| 1880  | Node-RED         | OpenJS / Node-RED editor                       | Reachable (red herring)                        |
+| 8080  | http-proxy       | Werkzeug 2.3.7 / Python 3.12.3 — Flask login   | Redirects to `/login` (red herring)            |
+| 44818 | EtherNet/IP      | EtherNetIP-2                                   | ICS discovery protocol                         |
+
+#### Raw Scan Output (key sections)
+
+```text
+PORT      STATE SERVICE       VERSION
+22/tcp    open  ssh           OpenSSH 9.6p1 Ubuntu 3ubuntu13.11 (Ubuntu Linux; protocol 2.0)
+80/tcp    open  http          Werkzeug/3.1.3 Python/3.12.3
+|_http-title: PLC CCTV Simulator
+102/tcp   open  iso-tsap      Siemens S7 PLC
+| s7-info:
+|   Module: 6ES7 315-2EH14-0AB0
+|   Version: 3.2.6
+|   System Name: SNAP7-SERVER
+|   Module Type: CPU 315-2 PN/DP
+|_  Copyright: Original Siemens Equipment
+502/tcp   open  mbap?
+1880/tcp  open  vsat-control?   (Node-RED editor — OpenJS Foundation)
+8080/tcp  open  http-proxy    Werkzeug/2.3.7 Python/3.12.3
+|_Requested resource was /login
+44818/tcp open  EtherNetIP-2?
+Service Info: OS: Linux; Device: specialized
+```
+
+> **Key reads:** `502/mbap` = Modbus, no auth. The S7 banner, EtherNet/IP, and Node-RED
+> all scream "ICS lab". Two Flask apps (Werkzeug) on 80 and 8080.
 
 ---
 
@@ -221,6 +247,8 @@ xdg-open f_001.png
 ```
 
 The opening frames of the explosion clip show the flag overlaid on the fireball:
+
+![Flag revealed in the explosion video](images/flag.png)
 
 ```
 THM{BOOM_BOOM_KABOOM}
