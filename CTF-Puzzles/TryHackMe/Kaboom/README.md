@@ -6,7 +6,7 @@
 > **Room:** [Kaboom](https://tryhackme.com/room/kaboom)  
 > **Category:** ICS / OT · SCADA · Modbus  
 > **Difficulty:** Medium  
-> **Flag:** `THM{BOOM_BOOM_KABOOM}`  
+> **Flag:** `THM{[REDACTED]}` _(withheld per TryHackMe policy)_  
 > **AI assistant used:** Claude (Anthropic)  
 > **AI vs AI:** Industrial control system breach — defeat a PLC safety interlock over unauthenticated Modbus TCP to trigger a simulated explosion and reveal the flag.
 
@@ -247,13 +247,11 @@ ffmpeg -i flag.mp4 -vf fps=2 f_%03d.png
 xdg-open f_001.png
 ```
 
-The opening frames of the explosion clip show the flag overlaid on the fireball:
+The opening frames of the explosion clip show the flag overlaid on the fireball — in
+the format `THM{...}`.
 
-![Flag revealed in the explosion video](images/flag.png)
-
-```
-THM{BOOM_BOOM_KABOOM}
-```
+> The flag itself is withheld in line with TryHackMe's write-up policy. Trigger the
+> explosion state yourself and extract the frame to retrieve it.
 
 ---
 
@@ -265,7 +263,7 @@ THM{BOOM_BOOM_KABOOM}
 | **Root Cause**   | No auth on Modbus + safety interlock controllable by attacker          |
 | **Technique**    | Register/coil manipulation; race the PLC scan cycle to defeat cooling  |
 | **Impact**       | Full override of physical process safety → simulated explosion         |
-| **Flag**         | `THM{BOOM_BOOM_KABOOM}`                                                 |
+| **Flag**         | `THM{...}` — withheld per TryHackMe write-up policy                     |
 
 **Key takeaways:**
 
@@ -287,4 +285,4 @@ THM{BOOM_BOOM_KABOOM}
 *Written by [George Giannakidis](https://github.com/georgegiannakidis) · 2026-06-27*  
 *Coding assistance: Claude (Anthropic)*  
 *TryHackMe · ICS/OT Security · Kaboom*  
-*Flag: `THM{BOOM_BOOM_KABOOM}`*
+*Flag withheld per TryHackMe policy · [Room: Kaboom](https://tryhackme.com/room/kaboom)*
