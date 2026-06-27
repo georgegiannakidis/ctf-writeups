@@ -2,12 +2,12 @@
 ### TryHackMe · ICS/OT Security · Kaboom
 
 > **Author:** [George Giannakidis](https://github.com/georgegiannakidis)  
+> **AI assistant used:** Claude (Anthropic)  
 > **Platform:** TryHackMe  
 > **Room:** [Kaboom](https://tryhackme.com/room/kaboom)  
 > **Category:** ICS / OT · SCADA · Modbus  
 > **Difficulty:** Medium  
 > **Flag:** `THM{BOOM_BOOM_KABOOM}`  
-> **AI assistant used:** Claude (Anthropic)  
 > **AI vs AI:** Industrial control system breach — defeat a PLC safety interlock over unauthenticated Modbus TCP to trigger a simulated explosion and reveal the flag.
 
 ---
