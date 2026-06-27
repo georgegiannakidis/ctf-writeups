@@ -250,6 +250,8 @@ xdg-open f_001.png
 The opening frames of the explosion clip show the flag overlaid on the fireball — in
 the format `THM{...}`.
 
+![Flag revealed in the explosion video (blurred per TryHackMe policy)](images/flag-blurred.png)
+
 > The flag itself is withheld in line with TryHackMe's write-up policy. Trigger the
 > explosion state yourself and extract the frame to retrieve it.
 
