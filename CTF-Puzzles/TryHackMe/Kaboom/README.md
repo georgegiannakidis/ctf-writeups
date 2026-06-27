@@ -277,8 +277,13 @@ THM{BOOM_BOOM_KABOOM}
 
 **Tools used:** `nmap` · `pymodbus` · `curl` · `ffmpeg`
 
+> **AI assistance:** Claude (Anthropic) was used as a coding assistant to help write and
+> debug the `pymodbus` scripts. All recon, exploitation decisions, and verification were
+> performed and validated by the author.
+
 ---
 
 *Written by [George Giannakidis](https://github.com/georgegiannakidis) · 2026-06-27*  
+*Coding assistance: Claude (Anthropic)*  
 *TryHackMe · ICS/OT Security · Kaboom*  
 *Flag: `THM{BOOM_BOOM_KABOOM}`*
